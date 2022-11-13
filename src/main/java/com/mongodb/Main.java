@@ -12,6 +12,7 @@ public class Main {
     public static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
+//        Connect to Mongo Database
         try (MongoClient mongoClient = MongoClients.create(System.getProperty("mongodb.uri"))) {
             MongoDatabase db = mongoClient.getDatabase("dictionary");
             MongoCollection<Document> clt = db.getCollection("dict");
@@ -19,31 +20,35 @@ public class Main {
             Search recent = new Search();
             Favorites fav = new Favorites();
             int selection = 0;
+//            Catch Input Exception.
             boolean hasErrors = true;
             do {
+                hasErrors = false;
                 try {
-
+//                    Main Menu.
                     View.clear();
                     View.menuView();
                     selection = Integer.parseInt(sc.nextLine());
                     switch (selection) {
+//                        Search by word
                         case 1:
                             do {
                                 View.searchByWordView();
                                 String searchInp = sc.nextLine();
+//                                Exit
                                 if (searchInp.equals("0"))
                                     break;
-                                if (searchInp.equals("1")) {
-                                    fav.setFavorites(recent.getCurentWord());
-                                    System.out.println("Added to favorites, press enter!");
-                                    sc.nextLine();
-                                } else {
+//                                Handle add to favorites
+                                if (searchInp.equals("1"))handleAddToFavorites(fav,dictionaryDb,recent);
+                                else {
                                     String word = searchInp.substring(0, 1).toUpperCase() + searchInp.substring(1);
                                     String searchString = Search.byWord(dictionaryDb.getCollection(), word);
                                     handleShowResult(searchString, recent, word);
                                 }
+
                             } while (true);
                             break;
+//                            Show recent words
                         case 2:
                             do {
                                 View.clear();
@@ -51,9 +56,11 @@ public class Main {
                                 int choice = 0;
                                 choice = Integer.parseInt(sc.nextLine());
                                 if (choice == 0) break;
+//                                HandleInput
                                 handleRecentSearch(dictionaryDb.getCollection(), choice, recent,fav);
                             } while (true);
                             break;
+//                            Show favorites
                         case 3:
                             do {
                                 View.favoritesView(fav);
@@ -80,18 +87,26 @@ public class Main {
                     }
                 } catch (Exception e) {
                     hasErrors = true;
+//                    Display the error message
                     Error.handleInput(e);
                 }
             }
+//            Reselect menuView
             while (selection != 0 || hasErrors);
         }
 
     }
-
+//            Add to favorites
+    private static void handleAddToFavorites(Favorites fav, Database dictionaryDb, Search recent) {
+            fav.setFavorites(recent.getCurentWord());
+            System.out.println("Added to favorites, press enter!");
+            sc.nextLine();
+    }
+//            Display favorites word
     private static void handleFavSearch(MongoCollection<Document> collection, int choice, Favorites fav) {
         System.out.println(Search.byWord(collection, fav.getFavoriteByIndex(choice)));
     }
-
+//            Remove favorites word
     private static void handleRemoveFavorite(Favorites fav) {
         System.out.println("Enter index of favorite word");
         Scanner sc = new Scanner(System.in);
@@ -104,16 +119,18 @@ public class Main {
         if (isConfirm) fav.deleteWord(index);
     }
 
+//             Display search result
     private static void handleShowResult(String searchString, Search recent, String word) {
         if (searchString.equals("Not found")) System.out.println(searchString);
         else {
             System.out.println(searchString);
             System.out.println("1. Add to favorite\n0. Return");
-            recent.setRecentWords(word);
             recent.setCurentWord(word);
+            recent.setRecentWords(word);
+            Save.recentWords(recent, searchString);
         }
     }
-
+//            Display recent words
     private static void handleRecentSearch(MongoCollection<Document> collection, int choice, Search recent, Favorites fav) {
         Scanner sc = new Scanner(System.in);
         int selection;
@@ -133,7 +150,7 @@ public class Main {
         } while (true);
 
     }
-
+//            Add new words to database
     private static void handleAddNewWord(Database dictionaryDb) {
         System.out.println("Enter word:");
         String input = sc.nextLine();

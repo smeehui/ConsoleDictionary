@@ -6,9 +6,9 @@ public class Favorites {
     private String[] favorites = new String[0];
 
     public void setFavorites(String word) {
-        List<String> wordList = new ArrayList<>(Arrays.asList(this.favorites));
-        wordList.add(word);
-        Set<String> setArr = new HashSet<>(wordList);
+        List<String> favoriteWords = new ArrayList<>(Arrays.asList(this.favorites));
+        favoriteWords.add(word);
+        Set<String> setArr = new HashSet<>(favoriteWords);
         this.favorites = setArr.toArray(new String[0]);
     }
 
