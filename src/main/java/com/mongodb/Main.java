@@ -18,65 +18,78 @@ public class Main {
             Database dictionaryDb = new Database(db, clt);
             Search recent = new Search();
             Favorites fav = new Favorites();
-            int selection;
+            int selection = 0;
+            boolean hasErrors = true;
             do {
-                View.clear();
-                View.menuView();
-                selection = Integer.parseInt(sc.nextLine());
-                switch (selection) {
-                    case 1:
-                        do {
-                            View.searchByWordView();
-                            String searchInp = sc.nextLine();
-                            if (searchInp.equals("0"))
-                                break;
-                            if (searchInp.equals("1")) {
-                                fav.setFavorites(recent.getCurentWord());
-                                System.out.println("Added to favorites, press enter!");
-                                sc.nextLine();
-                            } else {
-                                String word = searchInp.substring(0, 1).toUpperCase() + searchInp.substring(1);
-                                String searchString = Search.byWord(dictionaryDb.getCollection(), word);
-                                handleShowResult(searchString, recent, word);
-                                System.out.println("1. Add to favorite\n0. Return");
-                            }
-                        } while (true);
-                        break;
-                    case 2:
-                        do {
-                            View.recentWordView(recent);
-                            int choice = Integer.parseInt(sc.nextLine());
-                            if (choice == 0) break;
-                            handleRecentSearch(dictionaryDb.getCollection(), choice, recent, fav);
-                        } while (true);
-                        break;
-                    case 3:
-                        do {
-                            View.favoritesView(fav);
-                            String choice = sc.nextLine();
-                            if (choice.equals("0")) break;
-                            if (choice.equals("*")) handleRemoveFavorite(fav);
-                            else
-                                handleRecentSearch(dictionaryDb.getCollection(), Integer.parseInt(choice), recent, fav);
-                        } while (true);
-                        break;
-                    case 5:
-                        do {
-                            View.clear();
-                            View.managementView();
-                            int input = Integer.parseInt(sc.nextLine());
-                            if (input == 0) break;
-                            switch (input) {
-                                case 1:
-                                    handleAddNewWord(dictionaryDb);
+                try {
+
+                    View.clear();
+                    View.menuView();
+                    selection = Integer.parseInt(sc.nextLine());
+                    switch (selection) {
+                        case 1:
+                            do {
+                                View.searchByWordView();
+                                String searchInp = sc.nextLine();
+                                if (searchInp.equals("0"))
                                     break;
-                            }
-                        } while (true);
-                        break;
+                                if (searchInp.equals("1")) {
+                                    fav.setFavorites(recent.getCurentWord());
+                                    System.out.println("Added to favorites, press enter!");
+                                    sc.nextLine();
+                                } else {
+                                    String word = searchInp.substring(0, 1).toUpperCase() + searchInp.substring(1);
+                                    String searchString = Search.byWord(dictionaryDb.getCollection(), word);
+                                    handleShowResult(searchString, recent, word);
+                                }
+                            } while (true);
+                            break;
+                        case 2:
+                            do {
+                                View.clear();
+                                View.recentWordView(recent);
+                                int choice = 0;
+                                choice = Integer.parseInt(sc.nextLine());
+                                if (choice == 0) break;
+                                handleRecentSearch(dictionaryDb.getCollection(), choice, recent,fav);
+                            } while (true);
+                            break;
+                        case 3:
+                            do {
+                                View.favoritesView(fav);
+                                String choice = sc.nextLine();
+                                if (choice.equals("0")) break;
+                                if (choice.equals("*")) handleRemoveFavorite(fav);
+                                else
+                                    handleFavSearch(dictionaryDb.getCollection(), Integer.parseInt(choice),fav);
+                            } while (true);
+                            break;
+                        case 5:
+                            do {
+                                View.clear();
+                                View.managementView();
+                                int input = Integer.parseInt(sc.nextLine());
+                                if (input == 0) break;
+                                switch (input) {
+                                    case 1:
+                                        handleAddNewWord(dictionaryDb);
+                                        break;
+                                }
+                            } while (true);
+                            break;
+                    }
+                } catch (Exception e) {
+                    hasErrors = true;
+                    Error.handleInput(e);
                 }
             }
-            while (selection != 0);
+            while (selection != 0 || hasErrors);
         }
+
+    }
+
+    private static void handleFavSearch(MongoCollection<Document> collection, int choice, Favorites fav) {
+        System.out.println(Search.byWord(collection, fav.getFavoriteByIndex(choice)));
     }
 
     private static void handleRemoveFavorite(Favorites fav) {
@@ -95,6 +108,7 @@ public class Main {
         if (searchString.equals("Not found")) System.out.println(searchString);
         else {
             System.out.println(searchString);
+            System.out.println("1. Add to favorite\n0. Return");
             recent.setRecentWords(word);
             recent.setCurentWord(word);
         }
@@ -113,7 +127,6 @@ public class Main {
                 fav.setFavorites(recent.reviewWord(choice));
                 System.out.println("Added to favorites");
                 sc.nextLine();
-
                 break;
             }
 

@@ -17,7 +17,7 @@ public class Favorites {
     }
     public String getFavoriteByIndex(int index) {
         for (int i = 0; i < this.favorites.length; i++) {
-            if(i==index) return this.getFavorites()[i];
+            if(i==index-1) return this.getFavorites()[i];
         }
         return "Not found";
     }
