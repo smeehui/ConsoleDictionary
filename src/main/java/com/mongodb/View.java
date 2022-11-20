@@ -1,4 +1,9 @@
 package com.mongodb;
+
+import org.json.simple.parser.ParseException;
+
+import java.io.IOException;
+
 public class View {
     static void searchByWordView() {
         System.out.println("Search by Word");
@@ -24,15 +29,15 @@ public class View {
         System.out.println("3. Add to favorite.");
         System.out.println("0. Return");
     }
-    public static void recentWordView(Search recent) {
+    public static void recentWordView() throws IOException, ParseException {
         System.out.println("Recently searched words:");
-        System.out.println(recent.recentWordsView());
+        Read.recentWordsList();
         System.out.println("Enter number to review word \n0. Return");
     }
 
-    public static void favoritesView(Favorites fav) {
+    public static void favoritesView() throws IOException, ParseException {
         System.out.println("Favorites words:");
-        System.out.println(fav.favoritesView());
+        Read.favoritesList();
         System.out.println("Enter number to review word \n 0. Return\n*. Delete by index:");
     }
 }

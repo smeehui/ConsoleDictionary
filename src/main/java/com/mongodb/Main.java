@@ -5,23 +5,27 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
+import org.json.simple.parser.ParseException;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Main {
     public static Scanner sc = new Scanner(System.in);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, ParseException {
 //        Connect to Mongo Database
         try (MongoClient mongoClient = MongoClients.create(System.getProperty("mongodb.uri"))) {
             MongoDatabase db = mongoClient.getDatabase("dictionary");
             MongoCollection<Document> clt = db.getCollection("dict");
-            Database dictionaryDb = new Database(db, clt);
-            Search recent = new Search();
+            Database dictionaryDb = new Database(clt);
+            Search search = new Search();
             Favorites fav = new Favorites();
             int selection = 0;
 //            Catch Input Exception.
-            boolean hasErrors = true;
+            boolean hasErrors;
             do {
                 hasErrors = false;
                 try {
@@ -39,36 +43,38 @@ public class Main {
                                 if (searchInp.equals("0"))
                                     break;
 //                                Handle add to favorites
-                                if (searchInp.equals("1"))handleAddToFavorites(fav,dictionaryDb,recent);
+                                if (searchInp.equals("1")) handleAddToFavorites(search);
                                 else {
                                     String word = searchInp.substring(0, 1).toUpperCase() + searchInp.substring(1);
                                     String searchString = Search.byWord(dictionaryDb.getCollection(), word);
-                                    handleShowResult(searchString, recent, word);
+                                    handleShowResult(searchString, search, word);
                                 }
 
                             } while (true);
                             break;
-//                            Show recent words
+//                            Show search words
                         case 2:
                             do {
-                                View.clear();
-                                View.recentWordView(recent);
-                                int choice = 0;
+                                View.recentWordView();
+                                int choice ;
                                 choice = Integer.parseInt(sc.nextLine());
                                 if (choice == 0) break;
 //                                HandleInput
-                                handleRecentSearch(dictionaryDb.getCollection(), choice, recent,fav);
+//                                handleRecentSearch(dictionaryDb.getCollection(), choice, search, fav);
+                                handleRecentInput(search, choice);
                             } while (true);
                             break;
 //                            Show favorites
                         case 3:
                             do {
-                                View.favoritesView(fav);
+                                View.favoritesView();
                                 String choice = sc.nextLine();
                                 if (choice.equals("0")) break;
                                 if (choice.equals("*")) handleRemoveFavorite(fav);
-                                else
-                                    handleFavSearch(dictionaryDb.getCollection(), Integer.parseInt(choice),fav);
+                                else {
+                                    View.clear();
+                                    handleFavShow(Integer.parseInt(choice));
+                                }
                             } while (true);
                             break;
                         case 5:
@@ -85,9 +91,11 @@ public class Main {
                             } while (true);
                             break;
                     }
-                } catch (Exception e) {
+                } catch (FileNotFoundException e) {
                     hasErrors = true;
-//                    Display the error message
+                    Error.fileNotFound(e);
+                } catch (InputMismatchException | NumberFormatException e) {
+                    hasErrors = true;
                     Error.handleInput(e);
                 }
             }
@@ -96,17 +104,21 @@ public class Main {
         }
 
     }
-//            Add to favorites
-    private static void handleAddToFavorites(Favorites fav, Database dictionaryDb, Search recent) {
-            fav.setFavorites(recent.getCurentWord());
-            System.out.println("Added to favorites, press enter!");
-            sc.nextLine();
+
+    //            Add to favorites
+    private static void handleAddToFavorites(Search search) {
+        Save.favorites(search.getCurrentWord());
+        System.out.println("Added to favorites, press enter!");
+        sc.nextLine();
+
     }
-//            Display favorites word
-    private static void handleFavSearch(MongoCollection<Document> collection, int choice, Favorites fav) {
-        System.out.println(Search.byWord(collection, fav.getFavoriteByIndex(choice)));
+
+    //            Display favorites word
+    private static void handleFavShow(int choice) throws ParseException, IOException {
+        System.out.println(Read.favoriteWordByIndex(choice));
     }
-//            Remove favorites word
+
+    //            Remove favorites word
     private static void handleRemoveFavorite(Favorites fav) {
         System.out.println("Enter index of favorite word");
         Scanner sc = new Scanner(System.in);
@@ -119,38 +131,38 @@ public class Main {
         if (isConfirm) fav.deleteWord(index);
     }
 
-//             Display search result
-    private static void handleShowResult(String searchString, Search recent, String word) {
+    //             Display search result
+    private static void handleShowResult(String searchString, Search search, String word) {
         if (searchString.equals("Not found")) System.out.println(searchString);
         else {
             System.out.println(searchString);
             System.out.println("1. Add to favorite\n0. Return");
-            recent.setCurentWord(word);
-            recent.setRecentWords(word);
-            Save.recentWords(recent, searchString);
+            search.setCurrentWord(word, searchString);
+            search.setRecentWords(word);
+            Save.recentWords(search.getCurrentWord());
         }
     }
-//            Display recent words
-    private static void handleRecentSearch(MongoCollection<Document> collection, int choice, Search recent, Favorites fav) {
+
+    //            Display recent words
+    private static void handleRecentInput(Search search, int choice) throws IOException, ParseException {
         Scanner sc = new Scanner(System.in);
         int selection;
         do {
-            System.out.println(Search.byWord(collection, recent.reviewWord(choice)));
-            System.out.println("1. Add to faovrite\n0. Return");
+            System.out.println(Read.recentWordsListByIndex(choice));
+            System.out.println("1. Add to favorite\n0. Return");
             selection = sc.nextInt();
-            if (selection == 0) break;
             if (selection == 1) {
-                View.clear();
-                fav.setFavorites(recent.reviewWord(choice));
-                System.out.println("Added to favorites");
-                sc.nextLine();
+                search.setCurrentWord(Read.wordsList[choice - 1].toString(), Read.recentWordsListByIndex(choice));
+                Save.favorites(search.getCurrentWord());
+                System.out.println("Added "+Read.wordsList[choice - 1].toString() +" to favorites!");
                 break;
             }
 
         } while (true);
 
     }
-//            Add new words to database
+
+    //            Add new words to database
     private static void handleAddNewWord(Database dictionaryDb) {
         System.out.println("Enter word:");
         String input = sc.nextLine();

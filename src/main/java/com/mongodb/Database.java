@@ -1,20 +1,17 @@
 package com.mongodb;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
 public class Database {
-    private MongoDatabase db;
     private MongoCollection<Document> collection;
 
 
-    public Database (MongoDatabase db, MongoCollection<Document> collection) {
-            this.setDb(db);
+    public Database (MongoCollection<Document> collection) {
+            this.setDb();
             this.setCollection(collection);
     }
 
-    public void setDb(MongoDatabase db) {
-        this.db = db;
+    public void setDb() {
     }
 
     public MongoCollection<Document> getCollection() {
